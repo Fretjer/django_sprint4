@@ -65,16 +65,18 @@ class PostDetailView(PostMixin, DetailView):
 
     def get_object(self, **kwargs):
         """Вернуть сообщение или http404 от post id."""
-        post = get_object_or_404(
-            self.model.objects.filter(pk=self.kwargs['post_id'])
-        )
+        post = get_object_or_404(Post, pk=post_id)
+        if not post.is_published and post.author != request.user:
+            raise Http404()
 
         if post.author == self.request.user:
             return post
 
-        is_denied = (not post.is_published
-                     or post.pub_date > timezone.now()
-                     or not post.category.is_published)
+        is_denied = (
+            not post.is_published
+            or post.pub_date > timezone.now()
+            or (post.category and not post.category.is_published)
+        )
         if is_denied:
             raise Http404
 
